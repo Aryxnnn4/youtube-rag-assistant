@@ -11,6 +11,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
+import os
+
+PERSIST_DIR = "faiss_index"
 
 load_dotenv()
 
@@ -32,20 +35,30 @@ if __name__ == "__main__":
         raise RuntimeError("Transcript not available for this video")
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-
-    chunks = splitter.create_documents(
-        [transcript],
-        metadatas=[{"video_id": video_id}]
-    )
+    chunks = splitter.create_documents([transcript])
 
     for i, doc in enumerate(chunks):
         doc.metadata["chunk_id"] = i
+        doc.metadata["video_id"] = video_id
 
-    vector_store = FAISS.from_documents(chunks, embedding)
+    if os.path.exists(PERSIST_DIR):
+        print("Loading existing FAISS index...")
+        vector_store = FAISS.load_local(
+            PERSIST_DIR,
+            embedding,
+            allow_dangerous_deserialization=True
+        )
+    else:
+        print("Creating new FAISS index...")
+        vector_store = FAISS.from_documents(chunks, embedding)
+        vector_store.save_local(PERSIST_DIR)
 
     retriever = vector_store.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 4}
+        search_type="mmr",
+        search_kwargs={
+            "k": 4,
+            "fetch_k": 20
+        }
     )
 
     llm = HuggingFaceEndpoint(
@@ -77,15 +90,12 @@ Question: {question}
         | StrOutputParser()
     )
 
-    question = (
-        "Is the topic of nuclear fusion discussed in this video? "
-        "If yes, what was discussed?"
-    )
+    question = "What challenges are discussed in this video?"
 
     retrieved_docs = retriever.invoke(question)
     answer = chain.invoke(question)
 
-    print("\nAnswer:\n")
+    print("Answer:\n")
     print(answer)
 
     print("\nSources:\n")

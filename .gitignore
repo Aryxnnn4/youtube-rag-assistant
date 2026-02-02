@@ -10,3 +10,5 @@ __pycache__/
 
 # FAISS vector store (will be regenerated)
 data/faiss_index/
+
+faiss_index/
