@@ -32,7 +32,14 @@ if __name__ == "__main__":
         raise RuntimeError("Transcript not available for this video")
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.create_documents([transcript])
+
+    chunks = splitter.create_documents(
+        [transcript],
+        metadatas=[{"video_id": video_id}]
+    )
+
+    for i, doc in enumerate(chunks):
+        doc.metadata["chunk_id"] = i
 
     vector_store = FAISS.from_documents(chunks, embedding)
 
@@ -70,8 +77,20 @@ Question: {question}
         | StrOutputParser()
     )
 
-    print(
-        chain.invoke(
-            "Is the topic of nuclear fusion discussed in this video? If yes, what was discussed?"
-        )
+    question = (
+        "Is the topic of nuclear fusion discussed in this video? "
+        "If yes, what was discussed?"
     )
+
+    retrieved_docs = retriever.invoke(question)
+    answer = chain.invoke(question)
+
+    print("\nAnswer:\n")
+    print(answer)
+
+    print("\nSources:\n")
+    for doc in retrieved_docs:
+        print(
+            f"- Video {doc.metadata['video_id']} | Chunk {doc.metadata['chunk_id']}"
+        )
+
