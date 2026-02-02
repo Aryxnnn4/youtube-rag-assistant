@@ -1,0 +1,12 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments (if any inside project later)
+.venv/
+
+# FAISS vector store (will be regenerated)
+data/faiss_index/
