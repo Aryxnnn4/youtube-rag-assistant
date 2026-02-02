@@ -56,8 +56,8 @@ Answer + Sources (Streamlit UI)
 
 1. Clone the repository
 ```bash
-git clone https://github.com/Aryxnnn4/youtube-rag-assistant.git
-cd youtube-rag-assistant
+git clone https://github.com/aryan-bhadana/youtube-rag-assistant.git
+cd youtube-rag-assistant 
 ```
 2. Install dependencies
 ```bash
